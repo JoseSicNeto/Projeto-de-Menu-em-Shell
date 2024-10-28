@@ -1,0 +1,55 @@
+#!/bin/bash
+
+DisplayOptionsMenu()
+{
+   clear
+   echo $divider
+   printf "$lineFormat" "" "Display Options Menu"
+   echo $divider
+   for i in {1..8}
+   do
+      printf "$lineFormat" "" "$i - Display File $i"
+   done
+   echo $divider
+   printf "|%12s %-36s|\n" "" "0 - Return to Main Menu"
+   echo $divider
+
+   GetUserChoiceForDisplay
+}
+
+
+GetUserChoiceForDisplay()
+{
+   while :
+   do
+      read -p "Enter your choice: " userChoice
+ 
+      case $userChoice in
+         0) break ;;
+         [1-8]) 
+	    DisplayFile $userChoice
+	    break ;;
+         *) 
+	    ShowErrorMessage "Invalid choice. Please enter a number between 0 and 8." ;;
+      esac
+   done
+}
+
+
+DisplayFile()
+{
+   clear
+   local fileIndex=$1
+   
+   if [ -f "file$fileIndex" ]; then
+      echo "File $fileIndex:\n"
+      more file$fileIndex
+
+      echo -e "\nPress Enter to return to the menu"
+      read
+   else
+      ShowErrorMessage "File $fileIndex does not exist or can not be found"
+   fi
+
+   DisplayOptionsMenu
+}

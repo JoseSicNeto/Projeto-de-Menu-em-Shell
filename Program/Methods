@@ -1,0 +1,266 @@
+#!/bin/bash
+
+
+declare -A methods
+methods[1]="InsertDataToFiles1And2"
+methods[2]="CreateFile4FromFile3"
+methods[3]="CreateFile5WithSelectedLines"
+methods[4]="CapitalizeTextInFile"
+methods[5]="RemoveDuplicatesFromFile"
+methods[6]=`paste file1 file2 > file8`
+
+
+declare -A state
+state[SP]="Sao Paulo"
+state[RJ]="Rio de Janeiro"
+state[BA]="Bahia" 
+state[SE]="Sergipe" 
+state[SC]="Santa Catarina"       
+state[RS]="Rio Grande do Sul" 
+state[RN]="Rio Grande do Norte" 
+state[PE]="Pernambuco" 
+state[MS]="Mato Grosso do Sul" 
+state[GO]="Goias" 
+state[MG]="Minas Gerais" 
+state[ES]="Espirito Santo" 
+state[CE]="Ceara" 
+state[AM]="Amazonas" 
+state[PI]="Piaui" 
+state[RO]="Rondonia" 
+state[DF]="Distrito Federal" 
+state[TO]="Tocantins" 
+state[RR]="Roraima" 
+state[PR]="Parana" 
+state[MT]="Mato Grosso" 
+state[PA]="Para" 
+state[MA]="Maranhao" 
+state[AP]="Amapa" 
+state[PB]="Paraiba" 
+state[AL]="Alagoas" 
+state[AC]="Acre" 
+
+
+DisplayMethodsMenu()
+{
+   format="|%2s %-70s|\n"
+   divider2="|-------------------------------------------------------------------------|"
+   clear
+   echo $divider2
+   printf '|%22s %-50s|\n' "" "Methods Options Menu"
+   echo $divider2
+   printf "$format" "" "1 - Insert data into File 1 and File 2"
+   printf "$format" "" "2 - Create File 4 by selecting fields from File 3"
+   printf "$format" "" "3 - Create File 5 by selecting specific lines from File 1 or File 2"
+   printf "$format" "" "4 - Create File 6 with capitalized text from any File"
+   printf "$format" "" "5 - Create File 7 without duplicate lines from File 1 or File 2"
+   printf "$format" "" "6 - Create File 8 by merging File 1 and File 2"
+   echo $divider2
+   printf "$format" "" "0 - Return to Main Menu"
+   echo $divider2
+   echo ""
+
+   GetUserChoiceMethod
+}
+
+
+GetUserChoiceMethod()
+{
+   while :
+   do
+      read -p "Enter your choice: " userOption
+ 
+      case $userOption in
+         0) 
+            break 
+	    ;;
+         [1-6]) 
+            ${methods[$userOption]}
+
+            sleep 2  
+	    echo -e "\nFile was created\n"
+    	    sleep 2
+
+            DisplayMethodsMenu
+	    break 
+	    ;;
+         *) 
+            ShowErrorMessage "Invalid choice. Please enter a number between 0 and 6." 
+	    ;;
+      esac
+   done
+}
+
+
+InsertDataToFiles1And2()
+{
+   clear
+   echo -e "File 1 accepts only names."   
+   while :
+   do
+      read -p "Enter a first name: " firstName
+      firstName=$(echo "$firstName" | tr 'A-Z' 'a-z')
+      if [[ $firstName =~ ^[a-z]+$ ]]; then
+         break
+      else
+         ShowErrorMessage "Invalid Entry. Please enter a name with only letters."
+      fi
+   done
+
+   echo -e "\nFile 2 accepts only state abbreviations of Brazil."
+   while :
+   do
+      read -p "Enter a state abbreviation: " stateAbbreviation
+      stateAbbreviation=$(echo "$stateAbbreviation" | tr '[:lower:]' '[:upper:]')
+      if [[ -n "${state[$stateAbbreviation]}" ]]; then
+         break
+      else
+         ShowErrorMessage "Invalid Entry. Please enter a valid state abbreviation (e.g., SP)."
+     fi
+   done
+
+   echo "$firstName" >> file1
+   echo "${state[$stateAbbreviation]}" >> file2
+}
+
+
+CreateFile4FromFile3()
+{
+   clear
+   fieldOptions="1. Telephone - 2. State - 3. ZIP Code - 4. Region - 5. DDD"
+   echo "There are 5 fields"
+
+   while :; do
+       read -p "How many fields do you want to select: " fieldCount
+       if [[ $fieldCount -ge 1 && $fieldCount -le 5 ]]; then
+           break
+       else
+           ShowErrorMessage "Invalid entry. Please enter a value between 1 to 6"
+       fi
+   done
+
+   SelectLinesOrFields $fieldCount "fields"
+
+   count=0
+   files=""
+   for field in $selectedEntries; do
+      cut -d ";" -f $field file3 > "temp$count"
+      files="$files temp$count"
+      ((count++))
+   done
+
+   paste $files > file4
+   rm $files
+}
+
+
+ChooseFile() 
+{
+    echo ""
+    while true; 
+    do
+        read -p "Which file do you want to use, File 1 or File 2? " chosenFile
+        if [[ $chosenFile -eq 1 || $chosenFile -eq 2 ]]; then
+            file="file$chosenFile"
+            break
+        else
+            ShowErrorMessage "Invalid choice. Please select either File 1 or File 2."
+        fi
+    done
+    echo ""
+}
+
+
+CreateFile5WithSelectedLines ()
+{
+   clear
+   ChooseFile
+   count=$(wc -l $file | cut -d ' ' -f 1)
+   echo "There are $count lines"
+
+   while :; do
+       read -p "How many fields do you want to select: " linesCount
+       if [[ $linesCount -ge 1 ]] && [[ $linesCount -le $count ]]; then
+           break
+       else
+           ShowErrorMessage "Invalid entry. Please enter a value between 1 to $count"
+       fi
+   done
+
+   SelectLinesOrFields $linesCount "lines"
+
+   local lines=""
+   for line in $selectedEntries; do
+        lines="$lines$(sed -n "$line p" $file)\n"
+   done
+
+   echo -e "$lines" > file5
+   sed -i '$d' file5
+}
+
+
+SelectLinesOrFields()
+{
+   echo ""
+   local currentCount=0
+   local limit=$1
+   selectedEntries=""
+
+   if [[ $2 -eq "field" ]]; then
+      echo "Now enter the numbers corresponding to your fields"
+      echo "$fieldOptions"
+   else 
+      echo "Now enter the numbers to your lines"
+   fi
+
+   while (( currentCount < limit )); do
+       read -p "Enter a number: " fieldNumber
+       if [[ $fieldNumber =~ ^[1-9][0-9]*$ ]]; then
+          if [[ ! $selectedEntries =~ "$fieldNumber" ]]; then
+              if (( currentCount + 1 == limit )); then
+                  selectedEntries="${selectedEntries}$fieldNumber"
+              else
+                  selectedEntries="${selectedEntries}$fieldNumber "
+              fi
+              ((currentCount++))
+          else
+              ShowErrorMessage "Number already entered. Please enter a different number."
+          fi
+          else
+             ShowErrorMessage "Number must be a numeric value between 1 and $count. Please enter a number." 
+       fi
+   done
+}
+
+
+CapitalizeTextInFile()
+{
+   clear
+   ChooseFile
+   echo "Do you want the file in Upper Case(u) or Lower Case(l)?"
+   while :
+   do
+      read -p "Enter your decision: " userChoice
+      userChoice=$(echo "$userChoice" | tr '[:upper:]' '[:lower:]')
+   
+      case $userChoice in
+         "l" | "lower")
+            tr 'A-Z' 'a-z' < "$file" > file6
+     	    ;;
+         "u" | "upper")
+            tr 'a-z' 'A-Z' < "$file" > file6
+    	    ;;
+         *)
+            ShowErrorMessage "Invalid entry. Choose one of the options: 'l' or 'u'."
+    	    continue 
+    	    ;;
+      esac
+      break
+   done
+}
+
+
+RemoveDuplicatesFromFile()
+{
+   ChooseFile
+   sort < $file | uniq > file7
+}
