@@ -42,7 +42,7 @@ DisplayFile()
    local fileIndex=$1
    
    if [ -f "file$fileIndex" ]; then
-      echo "File $fileIndex:\n"
+      echo -e "File $fileIndex:\n"
       more file$fileIndex
 
       echo -e "\nPress Enter to return to the menu"
